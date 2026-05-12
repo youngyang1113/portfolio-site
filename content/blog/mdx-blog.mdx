@@ -1,0 +1,27 @@
+---
+title: 使用 MDX 组织博客
+date: 2026-05-08
+description: 用本地 MDX 文件管理文章内容，并在 Next.js App Router 中渲染。
+tags: MDX, Next.js, Content
+---
+
+## 为什么是 MDX
+
+MDX 可以在 Markdown 中写 JSX，让文章既能保持可读性，也能插入交互组件（例如演示组件、对比表格、信息块）。
+
+## 目录结构
+
+建议将文章放在 `content/blog/*.mdx`，并在 frontmatter 中维护元信息，例如标题、日期、摘要、标签。
+
+## 文章元信息
+
+一个最小可用的 frontmatter：
+
+```md
+---
+title: 文章标题
+date: 2026-05-12
+description: 一句话摘要
+tags: 标签A, 标签B
+---
+```

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D 地球定位</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: Inter, system-ui, sans-serif;
+    }
+
+    #canvas-wrap {
+      position: absolute;
+      inset: 0;
+    }
+
+    #status {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      font-size: 14px;
+      line-height: 1.4;
+      max-width: calc(100% - 32px);
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.4);
+    }
+
+    .hint {
+      opacity: 0.8;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-wrap"></div>
+  <div id="status">正在获取定位…<div class="hint">可拖拽旋转，滚轮缩放。</div></div>
+
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+    // 页面容器与状态显示面板
+    const container = document.getElementById('canvas-wrap');
+    const status = document.getElementById('status');
+
+    // Three.js 场景与背景
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    // 渲染器设置：抗锯齿、高像素比、自适应全屏
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    // 相机设置：透视相机更适合 3D 地球展示
+    const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 12);
+
+    // 轨道控制器：支持鼠标拖拽旋转和滚轮缩放
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.rotateSpeed = 0.7;
+    controls.maxDistance = 24;
+    controls.minDistance = 6;
+    controls.autoRotate = false;
+
+    // 灯光：主光源 + 环境光，使地球质感更自然
+    const light = new THREE.DirectionalLight(0xffffff, 1.0);
+    light.position.set(5, 3, 5);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x808080, 0.6));
+
+    const textureLoader = new THREE.TextureLoader();
+    const earthTextureUrl = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/land_ocean_ice_cloud_2048.jpg';
+
+    // 创建地球球体：使用高清纹理贴图
+    const earthRadius = 5;
+    const earthGeometry = new THREE.SphereGeometry(earthRadius, 64, 64);
+    const earthMaterial = new THREE.MeshStandardMaterial({
+      map: textureLoader.load(earthTextureUrl),
+      metalness: 0.1,
+      roughness: 0.9,
+    });
+    const earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
+    scene.add(earthMesh);
+
+    const markerGroup = new THREE.Group();
+    scene.add(markerGroup);
+
+    // 创建地球上标注点：红色圆球 + 标记杆 + 📍 文本图标
+    function createPinMarker() {
+      const pin = new THREE.Group();
+      const tip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 12, 12),
+        new THREE.MeshBasicMaterial({ color: 0xff3b3b })
+      );
+      tip.position.set(0, 0.15, 0);
+
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03, 0.03, 0.6, 10),
+        new THREE.MeshBasicMaterial({ color: 0xff6969 })
+      );
+      stem.position.set(0, -0.1, 0);
+
+      const label = createSprite('📍', '#ff7474', 80);
+      label.position.set(0, 0.5, 0);
+      label.scale.set(0.8, 0.8, 0.8);
+
+      pin.add(stem, tip, label);
+      return pin;
+    }
+
+    // 生成一个 2D Canvas 贴图，用作 📍 图标的精灵贴图
+    function createSprite(text, color, size) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const d = size;
+      canvas.width = d;
+      canvas.height = d;
+
+      ctx.fillStyle = 'rgba(0,0,0,0)';
+      ctx.fillRect(0, 0, d, d);
+      ctx.font = 'bold ' + Math.round(d * 0.7) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = color;
+      ctx.fillText(text, d / 2, d / 2 + 2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
+      return new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
+    }
+
+    // 将经纬度转换为球面上的 3D 坐标点，radius 表示球半径
+    function latLonToVector3(lat, lon, radius) {
+      const phi = (90 - lat) * (Math.PI / 180);
+      const theta = (lon + 180) * (Math.PI / 180);
+      return new THREE.Vector3(
+        -radius * Math.sin(phi) * Math.cos(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta)
+      );
+    }
+
+    function addLocationMarker(lat, lon) {
+      markerGroup.clear();
+      const marker = createPinMarker();
+      const position = latLonToVector3(lat, lon, earthRadius + 0.2);
+      marker.position.copy(position);
+      marker.lookAt(new THREE.Vector3(0, 0, 0));
+      marker.rotateX(Math.PI / 2);
+      markerGroup.add(marker);
+    }
+
+    function setStatus(message) {
+      status.innerHTML = `${message}<div class="hint">可拖拽旋转，滚轮缩放。</div>`;
+    }
+
+    // 浏览器定位逻辑：定位成功时显示用户位置，否则回退到默认坐标
+    function handleGeolocation() {
+      if (!navigator.geolocation) {
+        setStatus('浏览器不支持定位，已显示默认位置。');
+        addLocationMarker(39.9042, 116.4074);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          addLocationMarker(latitude, longitude);
+          setStatus(`已定位：${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°`);
+        },
+        () => {
+          setStatus('定位失败或被拒绝，已使用默认位置（北京）。');
+          addLocationMarker(39.9042, 116.4074);
+        },
+        { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 }
+      );
+    }
+
+    handleGeolocation();
+
+    function resize() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener('resize', resize);
+
+    const clock = new THREE.Clock();
+
+    // 渲染循环：让地球缓慢自转，并持续刷新画面
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      earthMesh.rotation.y += delta * 0.08;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>

@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <main className="homepage-master">
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/SimonAKing/font/font.min.css" />
-      <link rel="stylesheet" href="/homepage-master.css" />
+      <link rel="stylesheet" href="homepage-master.css" />
 
       <div className="content content-intro">
         <div className="content-inner">
@@ -69,7 +69,7 @@ export default function Home() {
         <div id="card">
           <div className="card-inner fade">
             <header>
-              <img src="/assets/avatar.jpg" width="100" height="100" alt="avatar" />
+              <img src="assets/avatar.jpg" width="100" height="100" alt="avatar" />
               <h1 data-translate="name">Rye Young</h1>
               <h2 id="signature" data-translate="signature">
                 Front End Engineering · Open Source
@@ -77,19 +77,19 @@ export default function Home() {
             </header>
             <ul>
               <li>
-                <a href="/blog" aria-label="Blog">
+                <a href="blog" aria-label="Blog">
                   <i className="icon icon-bokeyuan" />
                   <span data-translate="Blog">Blog</span>
                 </a>
               </li>
               <li>
-                <a href="/about" aria-label="About">
+                <a href="about" aria-label="About">
                   <i className="icon icon-xiaolian" />
                   <span data-translate="About">About</span>
                 </a>
               </li>
               <li>
-                <a href={`/contact?email=${encodeURIComponent(CONTACT_EMAIL)}`} aria-label="Email">
+                <a href={`contact?email=${encodeURIComponent(CONTACT_EMAIL)}`} aria-label="Email">
                   <i className="icon icon-email" />
                   <span data-translate="Email">Email</span>
                 </a>
@@ -114,8 +114,8 @@ export default function Home() {
         }}
       />
       <Script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" strategy="afterInteractive" />
-      <Script src="/js/homepage-main.js" strategy="afterInteractive" />
-      <Script src="/js/homepage-background.js" strategy="afterInteractive" />
+      <Script src="js/homepage-main.js" strategy="afterInteractive" />
+      <Script src="js/homepage-background.js" strategy="afterInteractive" />
     </main>
   )
 }

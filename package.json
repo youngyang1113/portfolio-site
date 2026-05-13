@@ -3,13 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "homepage": "https://youngyang1113.github.io/personal-profile",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/youngyang1113/personal-profile.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d out"
+    "deploy": "gh-pages -d out -b gh-pages"
   },
   "dependencies": {
     "@react-three/drei": "^9.83.0",

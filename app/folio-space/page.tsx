@@ -20,7 +20,7 @@ export default function FolioSpacePage() {
 
         <div className="mt-14">
           <iframe
-            src="/folio-space/index.html"
+            src="index.html"
             className="w-full h-[80vh] border border-gray-700 rounded-lg"
             title="FolioSpace Demo"
           />
